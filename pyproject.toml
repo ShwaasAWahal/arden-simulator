@@ -1,0 +1,10 @@
+[project]
+name = "arden-simulator"
+version = "0.1.0"
+description = "Educational simulator converting finite automata to regular expressions with Arden's theorem, step by step."
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

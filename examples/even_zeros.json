@@ -1,0 +1,15 @@
+{
+  "name": "even number of 0s",
+  "description": "Binary strings containing an even number of 0s (the empty string has zero 0s, so it is accepted).",
+  "expected_language_note": "Equivalent to (1+01*0)* or 1*(01*01*)*; contains ε.",
+  "states": ["even", "odd"],
+  "alphabet": ["0", "1"],
+  "start": "even",
+  "finals": ["even"],
+  "transitions": [
+    {"from": "even", "symbol": "0", "to": "odd"},
+    {"from": "even", "symbol": "1", "to": "even"},
+    {"from": "odd", "symbol": "0", "to": "even"},
+    {"from": "odd", "symbol": "1", "to": "odd"}
+  ]
+}

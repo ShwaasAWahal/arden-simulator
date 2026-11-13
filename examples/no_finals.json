@@ -1,0 +1,15 @@
+{
+  "name": "no final states",
+  "description": "An automaton without accepting states, so it accepts nothing.",
+  "expected_language_note": "The empty language ∅.",
+  "states": ["q0", "q1"],
+  "alphabet": ["a", "b"],
+  "start": "q0",
+  "finals": [],
+  "transitions": [
+    {"from": "q0", "symbol": "a", "to": "q1"},
+    {"from": "q0", "symbol": "b", "to": "q0"},
+    {"from": "q1", "symbol": "a", "to": "q0"},
+    {"from": "q1", "symbol": "b", "to": "q1"}
+  ]
+}

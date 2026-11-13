@@ -1,0 +1,17 @@
+{
+  "name": "strings containing aa",
+  "description": "Strings over {a, b} that contain aa as a substring.",
+  "expected_language_note": "Equivalent to (a+b)*aa(a+b)*.",
+  "states": ["q0", "q1", "q2"],
+  "alphabet": ["a", "b"],
+  "start": "q0",
+  "finals": ["q2"],
+  "transitions": [
+    {"from": "q0", "symbol": "a", "to": "q1"},
+    {"from": "q0", "symbol": "b", "to": "q0"},
+    {"from": "q1", "symbol": "a", "to": "q2"},
+    {"from": "q1", "symbol": "b", "to": "q0"},
+    {"from": "q2", "symbol": "a", "to": "q2"},
+    {"from": "q2", "symbol": "b", "to": "q2"}
+  ]
+}

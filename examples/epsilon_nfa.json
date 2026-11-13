@@ -1,0 +1,16 @@
+{
+  "name": "ε-NFA for a*b*c*",
+  "description": "Some a's, then some b's, then some c's (each block possibly empty).",
+  "expected_language_note": "Equivalent to a*b*c*; the ε-moves are removed during normalization.",
+  "states": ["q0", "q1", "q2"],
+  "alphabet": ["a", "b", "c"],
+  "start": "q0",
+  "finals": ["q2"],
+  "transitions": [
+    {"from": "q0", "symbol": "a", "to": "q0"},
+    {"from": "q0", "symbol": "ε", "to": "q1"},
+    {"from": "q1", "symbol": "b", "to": "q1"},
+    {"from": "q1", "symbol": "eps", "to": "q2"},
+    {"from": "q2", "symbol": "c", "to": "q2"}
+  ]
+}

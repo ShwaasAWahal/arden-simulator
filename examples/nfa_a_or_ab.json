@@ -1,0 +1,14 @@
+{
+  "name": "NFA for (a + ab)*",
+  "description": "Strings over {a, b} that split into blocks a and ab; every b is immediately preceded by an a.",
+  "expected_language_note": "Equivalent to (a+ab)*; nondeterministic on (q0, a).",
+  "states": ["q0", "q1"],
+  "alphabet": ["a", "b"],
+  "start": "q0",
+  "finals": ["q0"],
+  "transitions": [
+    {"from": "q0", "symbol": "a", "to": "q0"},
+    {"from": "q0", "symbol": "a", "to": "q1"},
+    {"from": "q1", "symbol": "b", "to": "q0"}
+  ]
+}

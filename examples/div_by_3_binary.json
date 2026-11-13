@@ -1,0 +1,17 @@
+{
+  "name": "binary numbers divisible by 3 (empty string accepted, read as 0)",
+  "description": "Binary numerals, most significant bit first, whose value is a multiple of 3; state rK means value mod 3 = K.",
+  "expected_language_note": "Equivalent to (0+1(01*0)*1)*; ε is accepted because the empty numeral is treated as 0.",
+  "states": ["r0", "r1", "r2"],
+  "alphabet": ["0", "1"],
+  "start": "r0",
+  "finals": ["r0"],
+  "transitions": [
+    {"from": "r0", "symbol": "0", "to": "r0"},
+    {"from": "r0", "symbol": "1", "to": "r1"},
+    {"from": "r1", "symbol": "0", "to": "r2"},
+    {"from": "r1", "symbol": "1", "to": "r0"},
+    {"from": "r2", "symbol": "0", "to": "r1"},
+    {"from": "r2", "symbol": "1", "to": "r2"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "all strings over {a, b}",
+  "description": "A single final start state that loops on every symbol, so every string is accepted.",
+  "expected_language_note": "Equivalent to (a+b)*.",
+  "states": ["q0"],
+  "alphabet": ["a", "b"],
+  "start": "q0",
+  "finals": ["q0"],
+  "transitions": [
+    {"from": "q0", "symbol": "a", "to": "q0"},
+    {"from": "q0", "symbol": "b", "to": "q0"}
+  ]
+}

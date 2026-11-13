@@ -1,0 +1,19 @@
+{
+  "name": "ends in a or in bb",
+  "description": "Strings over {a, b} that end with a or end with bb; q1 (ends in a) and q3 (ends in bb) are both final.",
+  "expected_language_note": "Equivalent to (a+b)*(a+bb).",
+  "states": ["q0", "q1", "q2", "q3"],
+  "alphabet": ["a", "b"],
+  "start": "q0",
+  "finals": ["q1", "q3"],
+  "transitions": [
+    {"from": "q0", "symbol": "a", "to": "q1"},
+    {"from": "q0", "symbol": "b", "to": "q2"},
+    {"from": "q1", "symbol": "a", "to": "q1"},
+    {"from": "q1", "symbol": "b", "to": "q2"},
+    {"from": "q2", "symbol": "a", "to": "q1"},
+    {"from": "q2", "symbol": "b", "to": "q3"},
+    {"from": "q3", "symbol": "a", "to": "q1"},
+    {"from": "q3", "symbol": "b", "to": "q3"}
+  ]
+}

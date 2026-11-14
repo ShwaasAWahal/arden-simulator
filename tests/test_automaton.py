@@ -10,7 +10,6 @@ from typing import Any
 
 import pytest
 from hypothesis import given, settings
-from hypothesis import strategies as st
 
 from core import ArdenError, InvalidAutomatonError
 from core.automaton import (
@@ -23,6 +22,7 @@ from core.automaton import (
     remove_epsilon,
     remove_unreachable,
 )
+from tests.conftest import random_nfas
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 EXAMPLE_FILES = sorted(p.name for p in EXAMPLES_DIR.glob("*.json"))
@@ -408,32 +408,6 @@ def test_normalize_examples_preserve_language(filename: str) -> None:
 # ---------------------------------------------------------------------------
 # Property: normalize preserves the language of random small NFAs
 # ---------------------------------------------------------------------------
-
-
-@st.composite
-def random_nfas(draw: st.DrawFn) -> Automaton:
-    """Random NFAs: 2-5 states, alphabet {a, b}, transitions including some ε."""
-    n = draw(st.integers(min_value=2, max_value=5))
-    states = [f"q{i}" for i in range(n)]
-    state = st.sampled_from(states)
-    transitions = draw(
-        st.lists(
-            st.tuples(state, st.sampled_from(["a", "b", "ε", "eps"]), state),
-            max_size=3 * n,
-        )
-    )
-    finals = draw(st.lists(state, unique=True))
-    start = draw(state)
-    return parse_automaton(
-        {
-            "name": "random",
-            "states": states,
-            "alphabet": ["a", "b"],
-            "start": start,
-            "finals": finals,
-            "transitions": [{"from": s, "symbol": x, "to": t} for s, x, t in transitions],
-        }
-    )
 
 
 @settings(max_examples=200, deadline=None)

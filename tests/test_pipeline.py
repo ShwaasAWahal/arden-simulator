@@ -242,3 +242,14 @@ def test_cli_subprocess_malformed_file(tmp_path: Path) -> None:
     assert proc.returncode == 2
     assert "Invalid JSON" in proc.stderr.decode("utf-8")
     assert proc.stdout == b""
+
+
+@pytest.mark.parametrize("filename", EXAMPLE_FILES)
+def test_result_is_picklable(filename: str) -> None:
+    # Streamlit's st.cache_data pickles return values.
+    import pickle
+
+    result = run_pipeline(EXAMPLES_DIR / filename)
+    restored = pickle.loads(pickle.dumps(result))
+    assert restored == result
+    assert dict(restored.solve.closed_forms) == dict(result.solve.closed_forms)

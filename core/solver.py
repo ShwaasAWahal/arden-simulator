@@ -23,8 +23,7 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass, field
 from enum import Enum
-from types import MappingProxyType
-from typing import Literal, Mapping, Sequence
+from typing import Any, Iterator, Literal, Mapping, Sequence
 
 from core import ArdenPreconditionError, SolverError
 from core.equations import Equation, EquationSystem, state_to_latex
@@ -47,6 +46,7 @@ __all__ = [
     "StepKind",
     "Phase",
     "TraceStep",
+    "ReadOnlyMap",
     "SolveResult",
     "apply_arden",
     "default_order",
@@ -89,6 +89,40 @@ class TraceStep:
     system_after: EquationSystem = field(repr=False)
 
 
+class ReadOnlyMap(Mapping[str, Regex]):
+    """A read-only, picklable ``str -> Regex`` mapping.
+
+    ``types.MappingProxyType`` would also be read-only, but it cannot be
+    pickled, which breaks caching (e.g. Streamlit's ``st.cache_data``).
+    """
+
+    __slots__ = ("_data",)
+
+    def __init__(self, data: Mapping[str, Regex]) -> None:
+        """Copy ``data`` so later changes to the source cannot leak in."""
+        self._data: dict[str, Regex] = dict(data)
+
+    def __getitem__(self, key: str) -> Regex:
+        """Look up the closed form of state ``key``."""
+        return self._data[key]
+
+    def __iter__(self) -> Iterator[str]:
+        """Iterate over state names."""
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        """Number of states."""
+        return len(self._data)
+
+    def __repr__(self) -> str:
+        """Readable representation, like a dict."""
+        return f"ReadOnlyMap({self._data!r})"
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        """Pickle support: rebuild from a plain dict."""
+        return (ReadOnlyMap, (self._data,))
+
+
 @dataclass(frozen=True)
 class SolveResult:
     """Outcome of :func:`solve`.
@@ -96,7 +130,7 @@ class SolveResult:
     Attributes:
         regex: the simplified regular expression of the automaton's language.
         closed_forms: closed-form regex of every state (``state -> Regex``), as a
-            read-only mapping so the frozen result cannot be mutated.
+            read-only (but picklable) mapping so the frozen result cannot be mutated.
         order: the elimination order that was used.
         steps: the full trace, indices 0..n-1.
     """
@@ -366,7 +400,7 @@ def solve(system: EquationSystem, order: Sequence[str] | None = None) -> SolveRe
         f"Final regular expression: {to_text(regex)}.",
         f"r = {to_latex(regex)}", current, current,
     )
-    return SolveResult(regex, MappingProxyType(closed), order, tuple(trace.steps))
+    return SolveResult(regex, ReadOnlyMap(closed), order, tuple(trace.steps))
 
 
 def solve_all_orders(system: EquationSystem, limit: int = 24) -> list[SolveResult]:

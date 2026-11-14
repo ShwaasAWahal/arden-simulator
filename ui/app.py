@@ -26,6 +26,7 @@ import streamlit as st  # noqa: E402
 from core.pipeline import EXAMPLES_DIR, PipelineResult, list_examples, run_pipeline  # noqa: E402
 from core.solver import StepKind, solve_all_orders  # noqa: E402
 from core.verifier import check_string  # noqa: E402
+from export.report import render_latex, render_markdown, slugify  # noqa: E402
 from ui.components import (  # noqa: E402
     build_diagram,
     build_manual_spec,
@@ -419,6 +420,29 @@ def tab_compare(result: PipelineResult, spec_json: str) -> None:
     st.caption(f"Sorted by length (characters); ★ marks the shortest. Verified up to length {length}.")
 
 
+def tab_export(result: PipelineResult) -> None:
+    """Download the report (Markdown / LaTeX) and the automaton JSON."""
+    slug = slugify(result.original.name)
+    st.write("Download a full report with every step of the conversion.")
+    md_col, tex_col = st.columns(2)
+    md_col.download_button(
+        "Download Markdown report", data=render_markdown(result),
+        file_name=f"{slug}.md", mime="text/markdown", key="dl_md", width="stretch",
+    )
+    tex_col.download_button(
+        "Download LaTeX report", data=render_latex(result),
+        file_name=f"{slug}.tex", mime="application/x-tex", key="dl_tex", width="stretch",
+    )
+    st.caption("The .tex file is a complete document: it compiles in Overleaf or with `pdflatex`.")
+    st.divider()
+    st.write("Save the automaton itself, e.g. one you built manually, to upload it again later.")
+    st.download_button(
+        "Download automaton JSON",
+        data=json.dumps(result.original.to_dict(), indent=2, ensure_ascii=False),
+        file_name=f"{slug}.json", mime="application/json", key="dl_json",
+    )
+
+
 def main() -> None:
     """Build the page."""
     st.set_page_config(page_title="Arden's Theorem Simulator", layout="wide")
@@ -450,7 +474,10 @@ def main() -> None:
         except Exception as exc:  # noqa: BLE001
             render_error(exc)
     with tabs[4]:
-        st.info("Report export comes in the next step.")
+        try:
+            tab_export(result)
+        except Exception as exc:  # noqa: BLE001
+            render_error(exc)
 
     if st.session_state.playing and st.session_state.step < len(result.solve.steps) - 1:
         time.sleep(1.0)

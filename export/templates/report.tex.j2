@@ -1,1 +1,123 @@
-{# LaTeX report template. TODO (build step 8). #}
+%# LaTeX report template. Jinja delimiters: BLOCK statements, VAR values, %# line comments.
+%# Filters: tex = escape plain text, state = state name as math, stateset = target set as math.
+%# *_block values are ready-made align* bodies (lines joined with \\).
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+
+\title{Arden's Theorem Report: \VAR{name | tex}}
+\date{\VAR{date}}
+\author{Arden's Theorem Simulator}
+
+\begin{document}
+\maketitle
+\BLOCK{if description}
+\noindent \VAR{description | tex}
+\BLOCK{endif}
+
+\section{\VAR{sections[0] | tex}}
+If $P$ and $Q$ are regular expressions and $P$ does not contain the empty string
+($\varepsilon \notin P$), then the equation $R = Q + RP$ has the unique solution
+\[
+  R = Q + RP \;\Rightarrow\; R = QP^{*}.
+\]
+\paragraph{Method.}
+\begin{enumerate}
+  \item \textbf{Write one equation per state.} A state's right-hand side sums its incoming
+        transitions: each move $q_j \xrightarrow{a} q_i$ adds the term $q_j a$.
+        The start state also gets $\varepsilon$.
+  \item \textbf{Solve by substitution.} Substitute equations into each other; whenever a
+        state refers to itself, $q = Q + qP$, Arden's theorem gives $q = QP^{*}$.
+  \item \textbf{Combine.} The regular expression is the union of the solutions of all
+        final states ($\varnothing$ if there are none).
+\end{enumerate}
+
+\section{\VAR{sections[1] | tex}}
+\begin{itemize}
+  \item \textbf{States:} \VAR{automaton.states | map("state") | map("inline_math") | join(", ")}
+  \item \textbf{Alphabet:} \VAR{automaton.alphabet | join(", ") | tex}
+  \item \textbf{Start state:} $\VAR{automaton.start | state}$
+  \item \textbf{Final states:} \BLOCK{if finals}\VAR{finals | map("state") | map("inline_math") | join(", ")}\BLOCK{else}none\BLOCK{endif}
+
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{l\VAR{"c" * (columns | length)}}
+\toprule
+State\BLOCK{for x in columns} & \VAR{x | tex}\BLOCK{endfor} \\
+\midrule
+\BLOCK{for row in rows}
+$\BLOCK{if row.start}\rightarrow\,\BLOCK{endif}\BLOCK{if row.final}{*}\,\BLOCK{endif}\VAR{row.state | state}$\BLOCK{for t in row.targets} & $\VAR{t | stateset}$\BLOCK{endfor} \\
+\BLOCK{endfor}
+\bottomrule
+\end{tabular}
+
+\smallskip
+{\small $\rightarrow$ marks the start state, $*$ marks final states; cells are target sets.}
+\end{center}
+
+\section{\VAR{sections[2] | tex}}
+\begin{itemize}
+\BLOCK{for step in preprocessing}
+  \item \VAR{step.description | tex}
+\BLOCK{endfor}
+\end{itemize}
+
+\section{\VAR{sections[3] | tex}}
+\begin{align*}
+\VAR{system_block}
+\end{align*}
+
+\section{\VAR{sections[4] | tex}}
+\VAR{order | map("state") | map("inline_math") | join(" $\\rightarrow$ ")}
+\BLOCK{for note in notes}
+
+\noindent\textit{Note:} \VAR{note | tex}
+\BLOCK{endfor}
+
+\section{\VAR{sections[5] | tex}}
+\BLOCK{for step in steps}
+\subsection*{Step \VAR{step.number}: \VAR{step.kind | tex} (\VAR{step.phase | tex})}
+\VAR{step.explanation | tex}
+\BLOCK{if step.rule_latex}
+%# Inline math inside a quote (not \[ \]) so long rules can break after + = and \Rightarrow.
+\begin{quote}
+  $\VAR{step.rule_latex}$
+\end{quote}
+\BLOCK{endif}
+\BLOCK{if step.show_system}
+\begin{align*}
+\VAR{step.system_block}
+\end{align*}
+\BLOCK{endif}
+
+\BLOCK{endfor}
+\section{\VAR{sections[6] | tex}}
+\begin{quote}
+  \large $\VAR{regex_latex}$
+\end{quote}
+In text notation: \texttt{\VAR{regex_text | tex}}
+
+\section{\VAR{sections[7] | tex}}
+\BLOCK{if verification.passed}
+\textbf{Passed:} the automaton and the regular expression agree on all
+\VAR{verification.strings_checked} strings up to length \VAR{verification.max_length}.
+\BLOCK{else}
+\textbf{Failed:} on the string \texttt{\VAR{(verification.counterexample or "ε") | tex}} the automaton
+\VAR{"accepts" if verification.fa_accepts_counterexample else "rejects"} it but the regular expression
+\VAR{"accepts" if verification.re_accepts_counterexample else "rejects"} it
+(\VAR{verification.strings_checked} strings checked up to length \VAR{verification.max_length}).
+\BLOCK{endif}
+\BLOCK{if verification.truncated}
+The maximum length was reduced to \VAR{verification.max_length} to stay within the string budget.
+\BLOCK{endif}
+
+\begin{itemize}
+  \item \textbf{Accepted by both (shortest first):} \BLOCK{if accepted}\VAR{accepted | join(", ") | tex}\BLOCK{else}none\BLOCK{endif}
+
+  \item \textbf{Rejected by both (shortest first):} \BLOCK{if rejected}\VAR{rejected | join(", ") | tex}\BLOCK{else}none\BLOCK{endif}
+
+\end{itemize}
+
+\end{document}

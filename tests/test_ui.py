@@ -139,6 +139,16 @@ def test_compare_orders_table() -> None:
     assert table["shortest"].iloc[0] == "★"
 
 
+def test_export_tab_download_buttons() -> None:
+    at = run_example(fresh_app())
+    buttons = at.get("download_button")
+    labels = [b.proto.label for b in buttons]
+    assert labels == ["Download Markdown report", "Download LaTeX report", "Download automaton JSON"]
+    assert any("pdflatex" in c.value for c in at.caption)
+    assert not at.exception
+    assert not any("went wrong" in e.value for e in at.error)
+
+
 def test_epsilon_example_preprocessing_tab() -> None:
     at = run_example(fresh_app(), "epsilon_nfa.json")
     assert any("Removed 2 ε-transition" in t for t in markdown_texts(at))

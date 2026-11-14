@@ -1,1 +1,97 @@
-{# Markdown report template. TODO (build step 8). #}
+{# Markdown report. All values arrive raw; `md` escapes Markdown specials. #}
+# {{ name | md }}
+
+*Generated on {{ date }} by the Arden's Theorem Simulator.*
+
+{% if description %}
+{{ description | md }}
+
+{% endif %}
+## {{ sections[0] }}
+
+If $P$ and $Q$ are regular expressions and $P$ does not contain the empty string ($\varepsilon \notin P$), then the equation $R = Q + RP$ has the unique solution
+
+$$R = Q + RP \;\Rightarrow\; R = QP^{*}$$
+
+**Method**
+
+1. **Write one equation per state.** A state's right-hand side sums its incoming transitions: each move $q_j \xrightarrow{a} q_i$ adds the term $q_j a$. The start state also gets $\varepsilon$.
+2. **Solve by substitution.** Substitute equations into each other; whenever a state refers to itself, $q = Q + qP$, Arden's theorem gives $q = QP^{*}$.
+3. **Combine.** The regular expression is the union of the solutions of all final states ($\varnothing$ if there are none).
+
+## {{ sections[1] }}
+
+- **States:** {{ automaton.states | join(", ") | md }}
+- **Alphabet:** {{ automaton.alphabet | join(", ") | md }}
+- **Start state:** {{ automaton.start | md }}
+- **Final states:** {{ (finals | join(", ") | md) if finals else "none" }}
+
+Transition table (→ marks the start state, \* marks final states; cells are target sets):
+
+| State |{% for x in columns %} {{ x | md }} |{% endfor %}
+
+|---|{% for x in columns %}---|{% endfor %}
+
+{% for row in rows %}
+| {{ "→ " if row.start }}{{ "* " | md if row.final }}{{ row.state | md }} |{% for t in row.targets %} {{ ("{" ~ (t | join(", ")) ~ "}") | md if t else "∅" }} |{% endfor %}
+
+{% endfor %}
+
+## {{ sections[2] }}
+
+{% for step in preprocessing %}
+- {{ step.description | md }}
+{% endfor %}
+
+## {{ sections[3] }}
+
+```text
+{{ system.to_text() }}
+```
+
+## {{ sections[4] }}
+
+{{ order | join(" → ") | md }}
+
+{% for note in notes %}
+> {{ note | md }}
+
+{% endfor %}
+## {{ sections[5] }}
+
+{% for step in steps %}
+### Step {{ step.number }}: {{ step.kind }} ({{ step.phase }})
+
+{{ step.explanation | md }}
+
+{% if step.rule_latex %}
+$${{ step.rule_latex }}$$
+
+{% endif %}
+{% if step.show_system %}
+```text
+{{ step.system_text }}
+```
+
+{% endif %}
+{% endfor %}
+## {{ sections[6] }}
+
+`{{ regex_text }}`
+
+$${{ regex_latex }}$$
+
+## {{ sections[7] }}
+
+{% if verification.passed %}
+**Passed:** the automaton and the regular expression agree on all {{ verification.strings_checked }} strings up to length {{ verification.max_length }}.
+{% else %}
+**Failed:** on the string `{{ verification.counterexample or "ε" }}` the automaton {{ "accepts" if verification.fa_accepts_counterexample else "rejects" }} it but the regular expression {{ "accepts" if verification.re_accepts_counterexample else "rejects" }} it ({{ verification.strings_checked }} strings checked up to length {{ verification.max_length }}).
+{% endif %}
+{% if verification.truncated %}
+
+The maximum length was reduced to {{ verification.max_length }} to stay within the string budget.
+{% endif %}
+
+- **Accepted by both (shortest first):** {{ accepted | map("md") | join(", ") if accepted else "none" }}
+- **Rejected by both (shortest first):** {{ rejected | map("md") | join(", ") if rejected else "none" }}

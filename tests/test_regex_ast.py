@@ -359,3 +359,10 @@ def test_python_re_round_trip(r: Regex, accept: list[str], reject: list[str]) ->
         assert matches(r, w), w
     for w in reject:
         assert not matches(r, w), w
+
+
+def test_latex_space_after_control_word() -> None:
+    # A raw (non-canonical) Concat keeps its ε part; LaTeX must not glue
+    # "\varepsilon" to a following letter.
+    assert to_latex(Concat((EPS, a))) == r"\varepsilon a"
+    assert to_latex(Concat((EPS, sym("0")))) == r"\varepsilon0"

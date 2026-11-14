@@ -18,6 +18,7 @@ in the UI.
 from __future__ import annotations
 
 import json
+import re
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -214,6 +215,8 @@ def _humanize(err: ValidationError) -> str:
         msg = str(e.get("msg", ""))
         if msg.startswith("Value error, "):
             msg = msg[len("Value error, "):]
+        # "...a valid dictionary or instance of TransitionSpec" -> "...a valid dictionary"
+        msg = re.sub(r" or instance of \w+", "", msg)
         loc = _format_loc(tuple(e.get("loc", ())))
         for piece in msg.split("\n"):
             lines.append(f"- {loc}: {piece}" if loc else f"- {piece}")
@@ -269,7 +272,9 @@ class Automaton:
             raise InvalidAutomatonError(f"start state {self.start!r} is not a state")
         if not self.finals <= states:
             raise InvalidAutomatonError(
-                f"final state(s) {sorted(self.finals - states)} are not states"
+                "final state(s) "
+                + ", ".join(repr(s) for s in sorted(self.finals - states))
+                + " are not in the state list"
             )
         if EPSILON in self.alphabet:
             raise InvalidAutomatonError("ε must not be listed in the alphabet")
@@ -441,8 +446,18 @@ def load_automaton(path: str | Path) -> Automaton:
     p = Path(path)
     try:
         text = p.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise InvalidAutomatonError(
+            f"Cannot read automaton file {str(p)!r}: the file does not exist."
+        ) from exc
+    except UnicodeDecodeError as exc:
+        raise InvalidAutomatonError(
+            f"Cannot read automaton file {str(p)!r}: it is not UTF-8 text "
+            "(save it as UTF-8 JSON)."
+        ) from exc
     except OSError as exc:
-        raise InvalidAutomatonError(f"Cannot read automaton file {str(p)!r}: {exc}") from exc
+        reason = exc.strerror or str(exc)
+        raise InvalidAutomatonError(f"Cannot read automaton file {str(p)!r}: {reason}.") from exc
     return parse_automaton(text)
 
 

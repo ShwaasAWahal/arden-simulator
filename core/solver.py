@@ -23,7 +23,8 @@ from __future__ import annotations
 import itertools
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal, Sequence
+from types import MappingProxyType
+from typing import Literal, Mapping, Sequence
 
 from core import ArdenPreconditionError, SolverError
 from core.equations import Equation, EquationSystem, state_to_latex
@@ -94,13 +95,14 @@ class SolveResult:
 
     Attributes:
         regex: the simplified regular expression of the automaton's language.
-        closed_forms: closed-form regex of every state (``state -> Regex``).
+        closed_forms: closed-form regex of every state (``state -> Regex``), as a
+            read-only mapping so the frozen result cannot be mutated.
         order: the elimination order that was used.
         steps: the full trace, indices 0..n-1.
     """
 
     regex: Regex
-    closed_forms: dict[str, Regex] = field(hash=False)
+    closed_forms: Mapping[str, Regex] = field(hash=False)
     order: tuple[str, ...]
     steps: tuple[TraceStep, ...]
 
@@ -206,6 +208,7 @@ class _Trace:
     """Accumulates TraceSteps with consecutive indices."""
 
     def __init__(self) -> None:
+        """Start with an empty trace."""
         self.steps: list[TraceStep] = []
 
     def emit(
@@ -219,6 +222,7 @@ class _Trace:
         before: EquationSystem,
         after: EquationSystem,
     ) -> None:
+        """Append a TraceStep whose index is the next consecutive number."""
         self.steps.append(
             TraceStep(
                 len(self.steps), kind, phase, focus, tuple(affected),
@@ -228,7 +232,8 @@ class _Trace:
 
 
 def _arden_step(system: EquationSystem, v: str, trace: _Trace, phase: Phase) -> EquationSystem:
-    """Apply Arden to ``v``'s equation if it is self-referential, recording an ARDEN step."""
+    """Apply Arden's theorem (R = Q + RP ⇒ R = QP*, P not nullable) to ``v``'s
+    equation if it is self-referential, recording an ARDEN step."""
     order = system.state_order
     eq = system.get(v)
     if not eq.has_self_reference():
@@ -361,7 +366,7 @@ def solve(system: EquationSystem, order: Sequence[str] | None = None) -> SolveRe
         f"Final regular expression: {to_text(regex)}.",
         f"r = {to_latex(regex)}", current, current,
     )
-    return SolveResult(regex, closed, order, tuple(trace.steps))
+    return SolveResult(regex, MappingProxyType(closed), order, tuple(trace.steps))
 
 
 def solve_all_orders(system: EquationSystem, limit: int = 24) -> list[SolveResult]:

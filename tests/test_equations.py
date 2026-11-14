@@ -298,3 +298,19 @@ def test_coefficients_are_not_nullable(filename: str) -> None:
         for var, coeff in eq.coeffs:
             assert not nullable(coeff), f"{filename}: {eq.lhs} has nullable coeff on {var}"
     assert system.get(system.start).const == EPS
+
+
+def test_epsilon_coefficient_prints_bare_variable() -> None:
+    # Cannot arise from an ε-free automaton, but the printer must still be sane.
+    eq = Equation("q1", (("q0", EPS),), a)
+    assert eq.to_text() == "q1 = q0 + a"
+    assert eq.to_latex() == r"q_{1} = q_{0} + a"
+
+
+def test_coeff_map_is_a_copy_and_system_str() -> None:
+    eq = Equation("q1", (("q0", a),))
+    m = eq.coeff_map
+    m["q9"] = b
+    assert eq.coeff_map == {"q0": a}
+    system = build("ends_with_01.json")
+    assert str(system) == system.to_text()

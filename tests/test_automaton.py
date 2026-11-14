@@ -420,3 +420,52 @@ def test_normalize_preserves_language_property(a: Automaton) -> None:
     # surviving states keep their relative order
     assert list(b.states) == [s for s in a.states if s in set(b.states)]
     assert steps and all(s.kind in {"remove_epsilon", "remove_unreachable", "remove_dead", "none"} for s in steps)
+
+
+# ---------------------------------------------------------------------------
+# Review additions: file errors, message cleanup, domain-model checks
+# ---------------------------------------------------------------------------
+
+
+def test_load_non_utf8_file(tmp_path: Path) -> None:
+    p = tmp_path / "latin1.json"
+    p.write_bytes(b"\xff\xfe{}")
+    with pytest.raises(InvalidAutomatonError, match="not UTF-8"):
+        load_automaton(p)
+
+
+def test_load_file_errors_are_readable(tmp_path: Path) -> None:
+    with pytest.raises(InvalidAutomatonError) as missing:
+        load_automaton(tmp_path / "nope.json")
+    assert "does not exist" in str(missing.value) and "Errno" not in str(missing.value)
+    with pytest.raises(InvalidAutomatonError, match="Cannot read"):
+        load_automaton(tmp_path)  # a directory
+
+
+def test_pydantic_model_names_hidden() -> None:
+    with pytest.raises(InvalidAutomatonError) as info:
+        parse_automaton(variant(transitions=[1]))
+    msg = str(info.value)
+    assert "transitions[0]: Input should be a valid dictionary" in msg
+    assert "TransitionSpec" not in msg
+
+
+@pytest.mark.parametrize(
+    ("changes", "fragment"),
+    [
+        ({"states": ()}, "at least one state"),
+        ({"states": ("q0", "q0")}, "duplicate state name(s): 'q0'"),
+        ({"finals": frozenset({"x"})}, "final state(s) 'x' are not in the state list"),
+        ({"alphabet": ("a", "ε")}, "ε must not be listed"),
+        ({"transitions": frozenset({("q0", "a", "q9")})}, "unknown state"),
+    ],
+)
+def test_domain_model_consistency_checks(changes: dict[str, Any], fragment: str) -> None:
+    args: dict[str, Any] = dict(
+        name="x", states=("q0",), alphabet=("a",), start="q0",
+        finals=frozenset(), transitions=frozenset(),
+    )
+    args.update(changes)
+    with pytest.raises(InvalidAutomatonError) as info:
+        Automaton(**args)
+    assert fragment in str(info.value)

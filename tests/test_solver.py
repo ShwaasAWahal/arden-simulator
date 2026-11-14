@@ -275,3 +275,10 @@ def test_solve_random_nfas(aut: Automaton) -> None:
     result = solve(build_equations(normalized))
     v = verify(aut, result.regex, max_length=6)
     assert v.passed, (to_text(result.regex), v.counterexample)
+
+
+def test_closed_forms_are_read_only() -> None:
+    _, system = prepared("ends_with_01.json")
+    result = solve(system)
+    with pytest.raises(TypeError):
+        result.closed_forms["q0"] = EMPTY  # type: ignore[index]

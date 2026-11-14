@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import itertools
-import re
 from pathlib import Path
-from typing import Sequence
 
 import pytest
 from hypothesis import given, settings
@@ -17,12 +15,10 @@ from core.equations import Equation, EquationSystem, build_equations
 from core.regex_ast import (
     EMPTY,
     EPS,
-    Regex,
     concat,
     nullable,
     star,
     sym,
-    to_python_re,
     to_text,
     union,
 )
@@ -34,35 +30,13 @@ from core.solver import (
     solve,
     solve_all_orders,
 )
+from core.verifier import verify
 from tests.conftest import random_nfas
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 EXAMPLE_FILES = sorted(p.name for p in EXAMPLES_DIR.glob("*.json"))
 
 a, b = sym("a"), sym("b")
-
-
-# ---------------------------------------------------------------------------
-# Local language helpers (the real verifier comes later)
-# ---------------------------------------------------------------------------
-
-
-def all_strings(alphabet: Sequence[str], n: int) -> list[str]:
-    """Every string over ``alphabet`` of length 0..n."""
-    return [
-        "".join(t) for k in range(n + 1) for t in itertools.product(alphabet, repeat=k)
-    ]
-
-
-def language_upto(regex: Regex, alphabet: Sequence[str], n: int) -> set[str]:
-    """All strings of length <= n over ``alphabet`` that ``regex`` fully matches."""
-    pattern = re.compile(to_python_re(regex))
-    return {w for w in all_strings(alphabet, n) if pattern.fullmatch(w)}
-
-
-def automaton_upto(aut: Automaton, n: int) -> set[str]:
-    """All strings of length <= n over the automaton's alphabet that it accepts."""
-    return {w for w in all_strings(aut.alphabet, n) if aut.accepts(w)}
 
 
 def prepared(name: str) -> tuple[Automaton, EquationSystem]:
@@ -73,12 +47,13 @@ def prepared(name: str) -> tuple[Automaton, EquationSystem]:
 
 
 def assert_same_language(aut: Automaton, result: SolveResult, n: int) -> None:
-    got = language_upto(result.regex, aut.alphabet, n)
-    want = automaton_upto(aut, n)
-    assert got == want, (
-        f"order {result.order}: RE {to_text(result.regex)} differs on "
-        f"{sorted(got ^ want, key=lambda w: (len(w), w))[:5]}"
+    """The solved RE agrees with the original automaton on all strings up to length n."""
+    v = verify(aut, result.regex, max_length=n)
+    assert v.passed, (
+        f"order {result.order}: RE {to_text(result.regex)} disagrees on "
+        f"{v.counterexample!r} (FA={v.fa_accepts_counterexample}, RE={v.re_accepts_counterexample})"
     )
+    assert not v.truncated and v.max_length == n
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +102,7 @@ def test_closed_forms_cover_every_state() -> None:
     result = solve(system)
     assert set(result.closed_forms) == set(system.state_order)
     # q2 is the only final state, so the RE is its closed form (simplified).
-    assert language_upto(result.closed_forms["q2"], aut.alphabet, 8) == automaton_upto(aut, 8)
+    assert verify(aut, result.closed_forms["q2"], max_length=8).passed
 
 
 # ---------------------------------------------------------------------------
@@ -298,4 +273,5 @@ def test_expression_size_guard(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_solve_random_nfas(aut: Automaton) -> None:
     normalized, _ = normalize(aut)
     result = solve(build_equations(normalized))
-    assert language_upto(result.regex, aut.alphabet, 6) == automaton_upto(aut, 6)
+    v = verify(aut, result.regex, max_length=6)
+    assert v.passed, (to_text(result.regex), v.counterexample)

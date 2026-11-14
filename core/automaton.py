@@ -217,6 +217,10 @@ def _humanize(err: ValidationError) -> str:
             msg = msg[len("Value error, "):]
         # "...a valid dictionary or instance of TransitionSpec" -> "...a valid dictionary"
         msg = re.sub(r" or instance of \w+", "", msg)
+        # Speak JSON, not Python: dictionary -> object, list -> array.
+        msg = msg.replace("a valid dictionary", "a JSON object").replace(
+            "a valid list", "a JSON array (a list in [ ])"
+        )
         loc = _format_loc(tuple(e.get("loc", ())))
         for piece in msg.split("\n"):
             lines.append(f"- {loc}: {piece}" if loc else f"- {piece}")
@@ -413,6 +417,21 @@ class Automaton:
 # ---------------------------------------------------------------------------
 
 
+def _json_kind(value: Any) -> str:
+    """Name a parsed JSON value the way JSON (not Python) does, e.g. ``an array``."""
+    if isinstance(value, bool):
+        return "a boolean"
+    if isinstance(value, (int, float)):
+        return "a number"
+    if isinstance(value, str):
+        return "a string"
+    if isinstance(value, list):
+        return "an array"
+    if value is None:
+        return "null"
+    return f"a {type(value).__name__}"
+
+
 def parse_automaton(data: dict[str, Any] | str) -> Automaton:
     """Validate a dict or a JSON string and return an :class:`Automaton`.
 
@@ -428,7 +447,8 @@ def parse_automaton(data: dict[str, Any] | str) -> Automaton:
             ) from exc
     if not isinstance(data, dict):
         raise InvalidAutomatonError(
-            f"Invalid automaton: expected a JSON object, got {type(data).__name__}"
+            "Invalid automaton: the JSON must be one object ({ ... }) with the keys "
+            f"states, alphabet, start, finals and transitions, not {_json_kind(data)}."
         )
     try:
         spec = AutomatonSpec.model_validate(data)

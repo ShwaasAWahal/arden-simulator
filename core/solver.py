@@ -21,6 +21,7 @@ Every change is recorded as a :class:`TraceStep` for the step-by-step UI.
 from __future__ import annotations
 
 import itertools
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Iterator, Literal, Mapping, Sequence
@@ -183,7 +184,8 @@ def apply_arden(eq: Equation) -> Equation:
         raise ArdenPreconditionError(
             f"cannot apply Arden's theorem to {eq.lhs}: P = {to_text(p)} is nullable "
             "(it contains ε), so R = Q + RP has no unique solution. This cannot happen "
-            "for an automaton without ε-transitions; run normalize() before solving."
+            "for an automaton without ε-transitions; remove them first (the simulator's "
+            "preprocessing, normalize(), does this)."
         )
     p_star = star(p)
     q = _without_self(eq)
@@ -416,7 +418,7 @@ def solve_all_orders(system: EquationSystem, limit: int = 24) -> list[SolveResul
     if n > MAX_STATES_ALL_ORDERS:
         raise SolverError(
             f"solve_all_orders supports at most {MAX_STATES_ALL_ORDERS} states "
-            f"({n} given: {n}! orders would be too many)"
+            f"(this one has {n}, i.e. {math.factorial(n)} possible orders)"
         )
     first = default_order(system)
     orders = [first] + [p for p in itertools.permutations(system.state_order) if p != first]

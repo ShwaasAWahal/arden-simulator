@@ -208,7 +208,7 @@ def test_invalid_json_text() -> None:
 
 
 def test_json_not_an_object() -> None:
-    with pytest.raises(InvalidAutomatonError, match="expected a JSON object"):
+    with pytest.raises(InvalidAutomatonError, match=r"must be one object .* not an array"):
         parse_automaton("[1, 2]")
 
 
@@ -446,8 +446,24 @@ def test_pydantic_model_names_hidden() -> None:
     with pytest.raises(InvalidAutomatonError) as info:
         parse_automaton(variant(transitions=[1]))
     msg = str(info.value)
-    assert "transitions[0]: Input should be a valid dictionary" in msg
+    assert "transitions[0]: Input should be a JSON object" in msg
+    assert "dictionary" not in msg  # Python jargon replaced with JSON terms
     assert "TransitionSpec" not in msg
+
+
+@pytest.mark.parametrize(
+    ("text", "kind"),
+    [("42", "a number"), ('"q0"', "a string"), ("true", "a boolean"), ("null", "null"), ("[]", "an array")],
+)
+def test_top_level_json_kind_named(text: str, kind: str) -> None:
+    with pytest.raises(InvalidAutomatonError, match=f"not {kind}\\."):
+        parse_automaton(text)
+
+
+def test_json_terms_in_type_errors() -> None:
+    with pytest.raises(InvalidAutomatonError) as info:
+        parse_automaton(variant(states="q0"))
+    assert "states: Input should be a JSON array" in str(info.value)
 
 
 @pytest.mark.parametrize(

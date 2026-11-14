@@ -18,6 +18,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 import json  # noqa: E402
+import math  # noqa: E402
 import time  # noqa: E402
 from typing import Any  # noqa: E402
 
@@ -402,7 +403,8 @@ def tab_compare(result: PipelineResult, spec_json: str) -> None:
     n = len(result.normalized.states)
     if n > MAX_COMPARE_STATES:
         st.info(
-            f"The automaton has {n} states after preprocessing, i.e. {n}! orders. Comparing "
+            f"The automaton has {n} states after preprocessing, i.e. {math.factorial(n):,} "
+            "possible orders. Comparing "
             f"every order is limited to {MAX_COMPARE_STATES} states to keep this fast."
         )
         return

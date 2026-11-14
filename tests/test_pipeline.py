@@ -128,7 +128,7 @@ def test_missing_file() -> None:
 
 
 def test_unsupported_source_type() -> None:
-    with pytest.raises(InvalidAutomatonError, match="Cannot read an automaton from a int"):
+    with pytest.raises(InvalidAutomatonError, match="Cannot read an automaton from a value of type int"):
         run_pipeline(42)  # type: ignore[arg-type]
 
 

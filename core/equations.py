@@ -330,7 +330,8 @@ def build_equations(a: Automaton) -> EquationSystem:
     """
     if a.has_epsilon():
         raise ArdenPreconditionError(
-            "the automaton has ε-transitions; run normalize() first"
+            "the automaton still has ε-transitions, which must be removed before the "
+            "equations are written (the simulator's preprocessing, normalize(), does this)"
         )
     incoming: dict[str, list[Term]] = {s: [] for s in a.states}
     for src, x, dst in a.transitions:

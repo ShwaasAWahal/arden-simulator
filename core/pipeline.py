@@ -102,7 +102,7 @@ def _load(source: dict[str, Any] | str | Path | Automaton) -> Automaton:
             return parse_automaton(source)
         return load_automaton(source)
     raise InvalidAutomatonError(
-        f"Cannot read an automaton from a {type(source).__name__}; "
+        f"Cannot read an automaton from a value of type {type(source).__name__}; "
         "give a JSON object, JSON text, or the path of a .json file."
     )
 

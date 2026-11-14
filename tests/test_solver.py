@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import itertools
+import os
 from pathlib import Path
 
 import pytest
@@ -268,7 +269,11 @@ def test_expression_size_guard(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-@settings(max_examples=200, deadline=None)
+#: Override for one-off stress runs, e.g. ARDEN_SOLVER_EXAMPLES=1000 pytest -k random_nfas
+SOLVER_EXAMPLES = int(os.environ.get("ARDEN_SOLVER_EXAMPLES", "200"))
+
+
+@settings(max_examples=SOLVER_EXAMPLES, deadline=None)
 @given(random_nfas())
 def test_solve_random_nfas(aut: Automaton) -> None:
     normalized, _ = normalize(aut)
@@ -282,3 +287,6 @@ def test_closed_forms_are_read_only() -> None:
     result = solve(system)
     with pytest.raises(TypeError):
         result.closed_forms["q0"] = EMPTY  # type: ignore[index]
+    assert len(result.closed_forms) == 3
+    assert list(result.closed_forms) == ["q0", "q1", "q2"]
+    assert repr(result.closed_forms).startswith("ReadOnlyMap({'q0': ")
